@@ -3,12 +3,15 @@
 namespace Assets.Scripts
 {
     [AddComponentMenu("Mythirial Test/Camera Test")]
+    [RequireComponent(typeof(Camera))]
     public class CameraTest : MonoBehaviour
     {
         [SerializeField]
         private const float Y_ANGLE_MIN = 0.0f;
         [SerializeField]
         private const float Y_ANGLE_MAX = 50.0f;
+
+        Camera cam;
 
         public bool lockCursor;
         public Transform lookAt;
@@ -30,6 +33,7 @@ namespace Assets.Scripts
 
         private void Awake()
         {
+            cam = GetComponent<Camera>();
             dollyDir = transform.localPosition.normalized;
             dstFromTarget = transform.localPosition.magnitude;
 
@@ -63,15 +67,27 @@ namespace Assets.Scripts
         }
 
         /// <summary>
-        /// Detecting collision on the camera side
+        /// Detecting collision for the camera to protect it from clipping through walls
         /// </summary>
         void CollisionDetect()
         {
-            Vector3 desiredCameraPos = lookAt.position - transform.forward * dstFromTarget;//lookAt.TransformPoint(lookAt.position - transform.position * dstMinMax.y);
-            RaycastHit hit;
+            Vector3[] camCorners = new[] {new Vector3(0, 0, cam.nearClipPlane), new Vector3(0, 1, cam.nearClipPlane), new Vector3(1, 0, cam.nearClipPlane), new Vector3(1, 1, cam.nearClipPlane)};
+            float h_Distance = dstMax;
+            RaycastHit hitLine;
+            for (int i = 0; i < camCorners.Length; i++) {
+                var boxPoint = -(lookAt.position - cam.ViewportToWorldPoint(camCorners[i])) * h_Distance;
 
-            if (Physics.Linecast(lookAt.position, desiredCameraPos, out hit))
-                dstFromTarget = hit.distance;
+                Debug.DrawRay(cam.ViewportToWorldPoint(camCorners[i]), Vector3.up);
+                Debug.DrawRay(lookAt.position, boxPoint, Color.green);
+
+                if (Physics.Raycast(lookAt.position, boxPoint, out hitLine)) {
+                    h_Distance = (hitLine.distance < h_Distance) ? hitLine.distance : h_Distance;
+                    Debug.DrawRay(hitLine.point, Vector3.up);
+                }
+            }
+
+            if (h_Distance < dstMax)
+                dstFromTarget = h_Distance;
             else
                 dstFromTarget = Mathf.Lerp(dstFromTarget, dstMax, Time.deltaTime * depthSmoothTime);
         }
