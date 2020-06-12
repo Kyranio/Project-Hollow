@@ -69,27 +69,22 @@ namespace Assets.Scripts
         /// <summary>
         /// Detecting collision for the camera to protect it from clipping through walls
         /// </summary>
+        Vector3 cam_Direction;
         void CollisionDetect()
         {
-            Vector3[] camCorners = new[] {new Vector3(0, 0, cam.nearClipPlane), new Vector3(0, 1, cam.nearClipPlane), new Vector3(1, 0, cam.nearClipPlane), new Vector3(1, 1, cam.nearClipPlane)};
-            float h_Distance = dstMax;
-            RaycastHit hitLine;
-            for (int i = 0; i < camCorners.Length; i++) {
-                var boxPoint = -(lookAt.position - cam.ViewportToWorldPoint(camCorners[i])) * h_Distance;
-
-                Debug.DrawRay(cam.ViewportToWorldPoint(camCorners[i]), Vector3.up);
-                Debug.DrawRay(lookAt.position, boxPoint, Color.green);
-
-                if (Physics.Raycast(lookAt.position, boxPoint, out hitLine)) {
-                    h_Distance = (hitLine.distance < h_Distance) ? hitLine.distance : h_Distance;
-                    Debug.DrawRay(hitLine.point, Vector3.up);
-                }
+            cam_Direction = -(lookAt.position - transform.position);
+            RaycastHit cam_colission;
+            Debug.DrawRay(lookAt.position, cam_Direction);
+            if (Physics.SphereCast(lookAt.position, dstFactor, cam_Direction, out cam_colission, dstFromTarget, 1<<9, QueryTriggerInteraction.UseGlobal)) {
+                dstFromTarget = cam_colission.distance;
+                Debug.DrawRay(cam_colission.point, Vector3.up);
             }
-
-            if (h_Distance < dstMax)
-                dstFromTarget = h_Distance;
             else
                 dstFromTarget = Mathf.Lerp(dstFromTarget, dstMax, Time.deltaTime * depthSmoothTime);
+        }
+
+        void OnDrawGizmos() {
+            Gizmos.DrawWireSphere(lookAt.position + cam_Direction, dstFactor);
         }
     }
 }
