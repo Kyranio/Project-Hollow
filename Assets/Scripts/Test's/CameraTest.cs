@@ -16,7 +16,7 @@ namespace Assets.Scripts
         public bool lockCursor;
         public Transform lookAt;
         public float dstFromTarget = 5f;
-        public float dstFactor = .8f;
+        public float dstFactor = .5f;
 
         public float rotationSmoothTime = .12f;
 		public float depthSmoothTime = 1;
@@ -62,7 +62,7 @@ namespace Assets.Scripts
             currentRotation = Vector3.SmoothDamp(currentRotation, new Vector3(currentY, currentX), ref rotationSmoothVelocity, rotationSmoothTime);
             transform.eulerAngles = currentRotation;
 
-            transform.position = lookAt.position - transform.forward * Mathf.Clamp((dstFromTarget * dstFactor), 0, dstMax);
+            transform.position = lookAt.position - transform.forward * Mathf.Clamp(dstFromTarget, 0, dstMax);
             //transform.localPosition = Vector3.Lerp(transform.localPosition, dollyDir * dstFromTarget, Time.deltaTime * rotationSmoothTime);
         }
 
@@ -74,17 +74,12 @@ namespace Assets.Scripts
         {
             cam_Direction = -(lookAt.position - transform.position);
             RaycastHit cam_colission;
-            Debug.DrawRay(lookAt.position, cam_Direction);
-            if (Physics.SphereCast(lookAt.position, dstFactor, cam_Direction, out cam_colission, dstFromTarget, 1<<9, QueryTriggerInteraction.UseGlobal)) {
+            
+            if (Physics.SphereCast(lookAt.position, dstFactor, cam_Direction, out cam_colission, dstFromTarget)) {
                 dstFromTarget = cam_colission.distance;
-                Debug.DrawRay(cam_colission.point, Vector3.up);
             }
             else
                 dstFromTarget = Mathf.Lerp(dstFromTarget, dstMax, Time.deltaTime * depthSmoothTime);
-        }
-
-        void OnDrawGizmos() {
-            Gizmos.DrawWireSphere(lookAt.position + cam_Direction, dstFactor);
         }
     }
 }
